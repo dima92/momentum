@@ -16,6 +16,7 @@ const temperature = document.querySelector(".temperature");
 const weatherDescription = document.querySelector(".weather-description");
 const wind = document.querySelector(".wind");
 const humidity = document.querySelector(".humidity");
+const weatherError = document.querySelector(".weather-error");
 const slideNext = document.querySelector(".slide-next");
 const slidePrev = document.querySelector(".slide-prev");
 const play = document.querySelector(".play");
@@ -49,7 +50,6 @@ const images = [
 const audio = new Audio();
 let randomNum,
   isPlay = false,
-  i = 0,
   playNum = 0;
 
 function showTime() {
@@ -118,13 +118,28 @@ function setLocalStorage() {
 async function getWeather() {
   const url = `https://api.openweathermap.org/data/2.5/weather?q=${city.value}&lang=en&appid=a52f4980a7ba658d2a606c2e70a5d0b7&units=metric`;
   const res = await fetch(url);
-  const data = await res.json();
-  weatherIcon.className = "weather-icon owf";
-  weatherIcon.classList.add(`owf-${data.weather[0].id}`);
-  temperature.textContent = `${data.main.temp.toFixed(0)}°C`;
-  weatherDescription.textContent = `${data.weather[0].description}`;
-  wind.textContent = `Wind speed: ${data.wind.speed.toFixed(0)} m/s`;
-  humidity.textContent = `Humidity: ${data.main.humidity}%`;
+  if (res.status === 200) {
+    const data = await res.json();
+    weatherIcon.className = "weather-icon owf";
+    weatherIcon.classList.add(`owf-${data.weather[0].id}`);
+    temperature.textContent = `${data.main.temp.toFixed(0)}°C`;
+    weatherDescription.textContent = `${data.weather[0].description}`;
+    wind.textContent = `Wind speed: ${data.wind.speed.toFixed(0)} m/s`;
+    humidity.textContent = `Humidity: ${data.main.humidity}%`;
+    weatherError.textContent = '';
+  } else if (res.status === 400) {
+    temperature.textContent = '';
+    weatherDescription.textContent = '';
+    wind.textContent = '';
+    humidity.textContent = '';
+    weatherError.textContent = `Error! Please enter the city!`
+  } else if (res.status === 404) {
+    temperature.textContent = '';
+    weatherDescription.textContent = '';
+    wind.textContent = '';
+    humidity.textContent = '';
+    weatherError.textContent = `Error! ${city.value} not found!`
+  }
 }
 
 function setCity(event) {
@@ -143,7 +158,7 @@ async function getQuote() {
 }
 
 randomNum = function getRandomNum() {
-  return Math.floor(1 - 0.5 + Math.random() * 20);
+  return Math.floor(1 - 0.5 + Math.random() * images.length);
 };
 
 function getSlideNext() {
@@ -167,15 +182,13 @@ function getSlidePrev() {
 function showBackground() {
   const img = new Image();
   const timeOfDay = getTimeOfDay();
-  const index = i % images.length;
-  i++;
-  img.src = base + timeOfDay + "/" + images[index];
+  img.src = base + timeOfDay + "/" + images[randomNum];
   img.onload = () => {
     document.body.style.backgroundImage = `url(${img.src})`;
   };
 }
 
-function playSong() {
+async function playSong() {
   isPlay = true;
   audio.src = playList[playNum].src;
   audio.currentTime = 0;
@@ -183,7 +196,7 @@ function playSong() {
     e.classList.remove("item-active");
   });
   playListContainer.childNodes[playNum].classList.add("item-active");
-  audio.play();
+  await audio.play();
   play.classList.replace("play", "pause");
 }
 
