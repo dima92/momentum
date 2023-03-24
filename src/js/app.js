@@ -33,33 +33,12 @@ const volSVG = 'url("assets/svg/volume.svg")';
 const muteSVG = 'url("assets/svg/mute.svg")';
 
 const base =
-  "https://raw.githubusercontent.com/rolling-scopes-school/stage1-tasks/assets/images/";
-const images = [
-  "01.jpg",
-  "02.jpg",
-  "03.jpg",
-  "05.jpg",
-  "06.jpg",
-  "07.jpg",
-  "08.jpg",
-  "09.jpg",
-  "10.jpg",
-  "11.jpg",
-  "12.jpg",
-  "13.jpg",
-  "14.jpg",
-  "15.jpg",
-  "16.jpg",
-  "17.jpg",
-  "18.jpg",
-  "19.jpg",
-  "20.jpg",
-];
+  "https://raw.githubusercontent.com/dima92/stage1-tasks/assets/images/";
+
 const audio = new Audio();
 let randomNum,
   isPlay = false,
   playNum = 0;
-city.value = 'Minsk'
 const min = 1
 const max = 20
 let audioDuration;
@@ -68,6 +47,8 @@ let audioLengthSeconds;
 let audioFullLength;
 let currentTime;
 let timer;
+
+city.value = 'Minsk'
 
 function showTime() {
   let today = new Date(),
@@ -133,9 +114,7 @@ function setLocalStorage() {
 }
 
 async function getWeather() {
-  const url = 'https://api.openweathermap.org/data/2.5/weather?q='
-    + city.value + '&lang=en'
-    + '&units=metric&appid=a52f4980a7ba658d2a606c2e70a5d0b7&units=metric';
+  const url = `https://api.openweathermap.org/data/2.5/weather?q=${city.value}&lang=en&appid=a52f4980a7ba658d2a606c2e70a5d0b7&units=metric`;
   const res = await fetch(url);
   if (res.status === 200) {
     const data = await res.json();
@@ -206,7 +185,8 @@ function getSlidePrev() {
 function showBackground() {
   const img = new Image();
   const timeOfDay = getTimeOfDay();
-  img.src = base + timeOfDay + "/" + images[randomNum];
+  randomNum = randomNum < 10 ? `0${randomNum}` : randomNum
+  img.src = base + timeOfDay + "/" + `${randomNum}.webp`;
   img.onload = () => {
     document.body.style.backgroundImage = `url(${img.src})`;
   };
@@ -231,10 +211,23 @@ function pauseSong() {
   audio.pause();
 }
 
+function togglePlayButton() {
+  if (isPlay === false) {
+    playListContainer.childNodes[playNum].classList.add("item-active");
+    play.classList.replace("play", "pause");
+    isPlay = true;
+  } else {
+    playListContainer.childNodes[playNum].classList.remove("item-active");
+    play.classList.replace("pause", "play");
+    isPlay = false;
+  }
+}
+
 function loadSong() {
   for (let i = 0; i < playList.length; i++) {
     const li = document.createElement("li");
     li.classList.add("play-item");
+    li.dataset.number = i;
     li.textContent = playList[i].title;
     playListContainer.append(li);
   }
@@ -260,6 +253,24 @@ function nextSong() {
   }
   play.classList.replace("play", "pause");
   playSong();
+}
+
+function selectAudio(event) {
+  let target = event.target
+  if (playNum == target.dataset.number && isPlay == true) {
+    togglePlayButton()
+    audio.pause()
+    isPlay = false
+  } else if (playNum == target.dataset.number && isPlay == false) {
+    togglePlayButton()
+    audio.play()
+    isPlay = true
+  } else {
+    togglePlayButton()
+    playNum = target.dataset.number
+    playNum = Number(playNum)
+    playSong()
+  }
 }
 
 audio.volume = 0.5;
@@ -337,6 +348,7 @@ play.addEventListener("click", () => (isPlay ? pauseSong() : playSong()));
 playPrev.addEventListener("click", prevSong);
 playNext.addEventListener("click", nextSong);
 audio.addEventListener("ended", nextSong);
+playListContainer.addEventListener('click', selectAudio);
 document.addEventListener("DOMContentLoaded", getQuote);
 document.addEventListener("DOMContentLoaded", getWeather);
 
