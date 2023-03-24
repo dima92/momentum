@@ -59,6 +59,9 @@ const audio = new Audio();
 let randomNum,
   isPlay = false,
   playNum = 0;
+city.value = 'Minsk'
+const min = 1
+const max = 20
 let audioDuration;
 let audioLengthMinutes;
 let audioLengthSeconds;
@@ -130,7 +133,9 @@ function setLocalStorage() {
 }
 
 async function getWeather() {
-  const url = `https://api.openweathermap.org/data/2.5/weather?q=${city.value}&lang=en&appid=a52f4980a7ba658d2a606c2e70a5d0b7&units=metric`;
+  const url = 'https://api.openweathermap.org/data/2.5/weather?q='
+    + city.value + '&lang=en'
+    + '&units=metric&appid=a52f4980a7ba658d2a606c2e70a5d0b7&units=metric';
   const res = await fetch(url);
   if (res.status === 200) {
     const data = await res.json();
@@ -158,7 +163,7 @@ async function getWeather() {
 
 function setCity(event) {
   if (event.code === "Enter") {
-    getWeather().then((value) => value);
+    getWeather();
     city.blur();
   }
 }
@@ -172,9 +177,13 @@ async function getQuote() {
   author.textContent = data[index].author;
 }
 
-randomNum = function getRandomNum() {
-  return Math.floor(1 - 0.5 + Math.random() * images.length);
-};
+function getRandomNum(min, max) {
+  min = Math.ceil(min)
+  max = Math.floor(max)
+  return Math.floor(Math.random() * (max - min + 1)) + min
+}
+
+randomNum = getRandomNum(min, max)
 
 function getSlideNext() {
   if (randomNum < 20) {
@@ -197,7 +206,7 @@ function getSlidePrev() {
 function showBackground() {
   const img = new Image();
   const timeOfDay = getTimeOfDay();
-  img.src = base + timeOfDay + "/" + images[randomNum()];
+  img.src = base + timeOfDay + "/" + images[randomNum];
   img.onload = () => {
     document.body.style.backgroundImage = `url(${img.src})`;
   };
