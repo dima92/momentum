@@ -23,6 +23,14 @@ const play = document.querySelector(".play");
 const playPrev = document.querySelector(".play-prev");
 const playNext = document.querySelector(".play-next");
 const playListContainer = document.querySelector(".play-list");
+const audioTitle = document.querySelector(".audio-title");
+const volumeButton = document.querySelector('.volume-button');
+const audioProgress = document.querySelector('#audio-progress');
+const volumeProgress = document.querySelector('#volume-progress');
+const audioProgressText = document.querySelector('.audio-progress-text');
+const playSVG = 'url("assets/svg/play.svg")';
+const volSVG = 'url("assets/svg/volume.svg")';
+const muteSVG = 'url("assets/svg/mute.svg")';
 
 const base =
   "https://raw.githubusercontent.com/rolling-scopes-school/stage1-tasks/assets/images/";
@@ -51,6 +59,12 @@ const audio = new Audio();
 let randomNum,
   isPlay = false,
   playNum = 0;
+let audioDuration;
+let audioLengthMinutes;
+let audioLengthSeconds;
+let audioFullLength;
+let currentTime;
+let timer;
 
 function showTime() {
   let today = new Date(),
@@ -73,7 +87,7 @@ function getTimeOfDay() {
   if (hour >= 6 && hour < 12) {
     return "morning";
   } else if (hour >= 12 && hour < 18) {
-    return "day";
+    return "afternoon";
   } else if (hour >= 18 && hour < 24) {
     return "evening";
   } else if (hour >= 0 && hour < 6) {
@@ -150,11 +164,12 @@ function setCity(event) {
 }
 
 async function getQuote() {
-  const url = `https://favqs.com/api/qotd`;
+  const url = `data.json`;
   const res = await fetch(url);
   const data = await res.json();
-  quote.textContent = data.quote.body;
-  author.textContent = data.quote.author;
+  const index = Math.floor(Math.random() * data.length);
+  quote.textContent = data[index].text;
+  author.textContent = data[index].author;
 }
 
 randomNum = function getRandomNum() {
@@ -182,7 +197,7 @@ function getSlidePrev() {
 function showBackground() {
   const img = new Image();
   const timeOfDay = getTimeOfDay();
-  img.src = base + timeOfDay + "/" + images[randomNum];
+  img.src = base + timeOfDay + "/" + images[randomNum()];
   img.onload = () => {
     document.body.style.backgroundImage = `url(${img.src})`;
   };
@@ -202,6 +217,7 @@ async function playSong() {
 
 function pauseSong() {
   isPlay = false;
+  playListContainer.childNodes[playNum].classList.remove("item-active");
   play.classList.replace("pause", "play");
   audio.pause();
 }
@@ -237,6 +253,77 @@ function nextSong() {
   playSong();
 }
 
+audio.volume = 0.5;
+volumeProgress.value = audio.volume;
+volumeProgress.style.background = `linear-gradient(to right, #82CFD0 0%, #82CFD0 ${volumeProgress.value * 100}%, 
+                                    #fff ${volumeProgress.value * 100}%, white 100%)`
+
+audio.addEventListener('loadedmetadata', () => {
+  audioDuration = audio.duration;
+  audioLengthMinutes = Math.floor(audioDuration / 60) < 10 ? `0${Math.floor(audioDuration / 60)}` : Math.floor(audioDuration / 60);
+  audioLengthSeconds = Math.floor(audioDuration % 60) < 10 ? `0${Math.floor(audioDuration % 60)}` : Math.floor(audioDuration % 60);
+  audioFullLength = `${audioLengthMinutes}:${audioLengthSeconds}`
+  audioProgress.setAttribute("max", audioDuration)
+  audioProgressText.textContent = `00:00/${audioFullLength}`;
+  audioTitle.textContent = playList[playNum].title;
+})
+
+audio.addEventListener('play', () => {
+  timer = setInterval(updateCurrentTime, 1000);
+})
+
+audioProgress.addEventListener('change', () => {
+  audio.currentTime = audioProgress.value;
+  let progressPercent = audio.currentTime / audioDuration * 100;
+  audioProgress.style.background = `linear-gradient(to right, #82CFD0 0%, #82CFD0 ${progressPercent}%, #fff ${progressPercent}%, white 100%)`
+})
+
+volumeButton.addEventListener('click', volumeControl)
+
+volumeProgress.addEventListener('pointermove', () => {
+  audio.volume = volumeProgress.value;
+  updateVolume();
+})
+
+function updateVolume() {
+  volumeProgress.value = audio.volume;
+  volumeProgress.style.background = `linear-gradient(to right, #82CFD0 0%, #82CFD0 ${volumeProgress.value * 100}%, #fff ${volumeProgress.value * 100}%, white 100%)`
+  if (audio.volume === 0) {
+    volumeButton.style.backgroundImage = muteSVG;
+  } else {
+    volumeButton.style.backgroundImage = volSVG;
+  }
+}
+
+function updateCurrentTime() {
+  currentTime = audio.currentTime;
+  audioProgress.value = currentTime;
+  let progressPercent = audio.currentTime / audioDuration * 100;
+  let currentMinutes = Math.floor(currentTime / 60) < 10 ? `0${Math.floor(currentTime / 60)}` : Math.floor(currentTime / 60);
+  let currentSeconds = Math.floor(currentTime % 60) < 10 ? `0${Math.floor(currentTime % 60)}` : Math.floor(currentTime % 60);
+  audioProgress.style.background = `linear-gradient(to right, #82CFD0 0%, #82CFD0 ${progressPercent}%, #fff ${progressPercent}%, white 100%)`
+  audioProgressText.textContent = `${currentMinutes}:${currentSeconds}/${audioFullLength}`;
+  if (audio.currentTime === audio.duration) {
+    playButton.classList.toggle('playing');
+    playButton.style.backgroundImage = playSVG;
+    audioProgress.value = 0;
+    audioProgressText.textContent = `00:00/${audioFullLength}`;
+    audioProgress.style.background = `linear-gradient(to right, #82CFD0 0%, #82CFD0 0%, #fff 0%, white 100%)`
+    clearInterval(timer)
+  }
+}
+
+function volumeControl() {
+  volumeButton.classList.toggle('active');
+  if (volumeButton.classList.contains('active')) {
+    volumeButton.style.backgroundImage = volSVG;
+    audio.muted = false;
+  } else {
+    volumeButton.style.backgroundImage = muteSVG;
+    audio.muted = true;
+  }
+}
+
 play.addEventListener("click", () => (isPlay ? pauseSong() : playSong()));
 playPrev.addEventListener("click", prevSong);
 playNext.addEventListener("click", nextSong);
@@ -255,6 +342,6 @@ window.addEventListener("load", getLocalStorage);
 
 showTime();
 getLocalStorage();
-getWeather().then((value) => value);
+getWeather();
 showBackground();
 loadSong(playList[playNum]);
